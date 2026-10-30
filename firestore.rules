@@ -28,7 +28,7 @@ service cloud.firestore {
       allow read, update: if isMember(chatId)
         && request.resource.data.members == resource.data.members;
       allow delete: if false;
-      match /messages/{messageId> {
+      match /messages/{messageId} {
         allow read: if isMember(chatId);
         allow create: if isMember(chatId)
           && request.resource.data.senderId == request.auth.uid
