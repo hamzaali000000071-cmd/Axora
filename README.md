@@ -1,62 +1,26 @@
 # AXORA Messenger
+Mobile-first messenger on GitHub Pages using Supabase Auth + Postgres Realtime. Firebase is removed from the application.
 
-A mobile-first messaging PWA starter with a separate, restricted admin console.
+## Included now
+- Google OAuth and email/password authentication
+- User profile creation and email lookup
+- Direct conversations and realtime text messages
+- Separate admin login and dashboard for user metadata, conversation totals and reports
+- Row Level Security; admin does not have SELECT access to message bodies
 
-## Current app surfaces
-- Main messenger: index.html
-- Separate admin console: admin.html (same Firebase project, admin custom-claim required)
-- Firestore rules: firestore.rules
-- One-time admin grant script: scripts/set-admin.mjs
+## Required one-time setup by owner
+1. Create a project at https://supabase.com/dashboard.
+2. In Project Settings > API copy Project URL and anon/public key.
+3. Replace YOUR_SUPABASE_PROJECT_URL and YOUR_SUPABASE_ANON_KEY in BOTH index.html and admin.html. Never put service_role key in browser code.
+4. Run all of supabase-schema.sql in Supabase SQL Editor.
+5. In Supabase Authentication > Providers enable Google and configure Google OAuth Client ID and Secret. Add the Supabase callback URL shown there to Google Cloud OAuth redirect URIs. Add https://hamzaali000000071-cmd.github.io/Axora/ to Supabase Auth URL Configuration > Redirect URLs.
+6. Enable Email provider. If email confirmation is enabled, users must confirm their email before login.
+7. Create your own account, then run the final admin-promotion SQL comment in supabase-schema.sql with your exact email.
+8. GitHub Pages deploys after commit. Main app: https://hamzaali000000071-cmd.github.io/Axora/ ; Admin: https://hamzaali000000071-cmd.github.io/Axora/admin.html
 
-## Main messenger MVP
-- Email/password registration and login through Firebase Authentication
-- Exact-email user lookup and one-to-one chat creation
-- Realtime text messages with Firestore
-- Browser-side message encryption using ECDH P-256, HKDF-SHA-256 and AES-256-GCM
-- Device-local private key storage using IndexedDB
-- Safety-code fingerprint for out-of-band verification
-- Responsive mobile interface and PWA shell
+## Scope
+Available after setup: Google/email sign-in, profiles, direct one-to-one realtime text chat, admin metadata dashboard.
+Not yet implemented: group-chat UI, media/file sharing, voice/video, push notifications, typing/presence, reactions/edit/delete, end-to-end encryption. This is an initial MVP, not audited production software.
 
-## Firebase setup
-1. Create a project at https://console.firebase.google.com/ and add a Web app.
-2. Enable Authentication → Email/Password.
-3. Create Firestore Database.
-4. Replace the Firebase web config placeholders in BOTH index.html and admin.html with the same project's apiKey, authDomain, projectId, and appId.
-5. Publish the complete firestore.rules file in Firestore → Rules.
-6. Host over HTTPS. Enable GitHub Pages at Settings → Pages → Build and deployment → GitHub Actions.
-7. Main app: open the published site root. Admin app: open /admin.html.
-
-## Granting the first administrator
-Admin access is NOT controlled by a client-side email check. Firebase custom claims must be set using the Firebase Admin SDK from a trusted computer:
-1. Create the first user account from the main AXORA app.
-2. On a trusted computer with Node.js, install the Admin SDK: npm install firebase-admin.
-3. Download a Firebase service-account JSON from Firebase Console → Project settings → Service accounts.
-4. Save it locally as serviceAccountKey.json in the repository folder. It is excluded by .gitignore; NEVER commit, upload, or share this private key.
-5. Run: node scripts/set-admin.mjs admin@example.com (replace with the exact email of the account you created).
-6. Sign out and sign in again at /admin.html so the refreshed token includes the admin claim.
-
-The admin console can show account profile metadata, aggregate counts, and reports. It does NOT provide access to chat documents or encrypted message contents. The reports table will remain empty until a report-submission feature is added to the main app.
-
-## Admin console scope and limitations
-- Separate admin login and dashboard, verified using Firebase's server-set admin custom claim.
-- Account directory shows profile metadata only.
-- Dashboard counts are limited to the first 500 users/chats and latest 100 reports in this starter.
-- Report resolution is supported for report documents.
-- Account blocking/suspension controls are not enabled in this version; they require corresponding enforcement in the main app and authentication/rules design.
-- This is a starter console, not a complete moderation or audit platform.
-
-## Security limitations
-This is an early MVP, not an audited secure messenger.
-- The first-time public-key exchange is not authenticated by a trusted server or signed identity. Compare safety codes out-of-band.
-- Private keys are stored only in the current browser's IndexedDB. Clearing site data or changing devices can make old messages unreadable.
-- No key recovery, multi-device key sync, forward secrecy, or key rotation.
-- User profile documents (including email and public key) are readable to signed-in users for exact-email contact lookup. Do not put sensitive data there.
-- Firestore chat/message rules allow only chat members to read messages. Admin custom claims do not grant chat/message access.
-- The Admin SDK service-account key has powerful project access. Keep it private and use it only on a trusted computer.
-- Use HTTPS and obtain a qualified security review before production or highly sensitive use.
-
-## Not included yet
-Voice/video calls, group chats, media uploads, push notifications, status/stories, online presence, message reply/forward, account recovery, verified identity/key transparency, and Android APK packaging.
-
-## Android
-The PWA can be installed from a supported Android browser using Add to Home screen / Install app after HTTPS hosting. A standalone APK/AAB requires a separate Android wrapper/TWA build and signing configuration; no ready APK is included.
+## Privacy
+Admin dashboard does not read message records. Message SELECT policy is limited to conversation members. Keep the Supabase service_role key secret; browser code uses only the anon/public key. Review policies and OAuth settings before inviting users.
