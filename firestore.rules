@@ -2,6 +2,7 @@ rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
     function signedIn() { return request.auth != null; }
+    function isAdmin() { return signedIn() && request.auth.token.admin == true; }
     function isSelf(uid) { return signedIn() && request.auth.uid == uid; }
     function isMember(chatId) {
       return signedIn()
@@ -10,10 +11,14 @@ service cloud.firestore {
     }
     match /users/{uid} {
       allow read: if signedIn();
-      allow create, update: if isSelf(uid)
+      allow create: if isSelf(uid)
         && request.resource.data.uid == uid
         && request.resource.data.email == request.auth.token.email;
-      allow delete: if isSelf(uid);
+      allow update: if (isSelf(uid)
+        && request.resource.data.uid == resource.data.uid
+        && request.resource.data.email == request.auth.token.email)
+        || isAdmin();
+      allow delete: if isSelf(uid) || isAdmin();
     }
     match /chats/{chatId} {
       allow create: if signedIn()
@@ -23,7 +28,7 @@ service cloud.firestore {
       allow read, update: if isMember(chatId)
         && request.resource.data.members == resource.data.members;
       allow delete: if false;
-      match /messages/{messageId} {
+      match /messages/{messageId> {
         allow read: if isMember(chatId);
         allow create: if isMember(chatId)
           && request.resource.data.senderId == request.auth.uid
@@ -32,6 +37,13 @@ service cloud.firestore {
           && request.resource.data.version == 1;
         allow update, delete: if false;
       }
+    }
+    match /reports/{reportId} {
+      allow create: if signedIn()
+        && request.resource.data.reporterUid == request.auth.uid
+        && request.resource.data.status == "open";
+      allow read, update: if isAdmin();
+      allow delete: if false;
     }
   }
 }
